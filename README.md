@@ -1,6 +1,6 @@
 # lococ
 
-A Telegram bot application that monitors HackerNews top stories and RSS feeds, sending notifications directly to configured Telegram channels.
+A Telegram bot daemon that monitors HackerNews top stories and RSS feeds, sending notifications directly to configured Telegram channels.
 
 Here's how a message sent to your Telegram channel will look like:
 
@@ -11,49 +11,74 @@ Here's how a message sent to your Telegram channel will look like:
 - Shorten links with [bitly](https://bitly.com/)
 - Send to multiple Telegram channels
 - Retry messages if rate limited by Telegram
+- Self-scheduling background daemon with configurable execution interval
+- Native systemd service support and graceful shutdown
 
 # Installation
-`lococ` includes two Go applications:
-- `lococ-job`: The main service that fetches news and posts to Telegram.
-- `lococ-web`: An optional web application.
 
 `lococ` requires a Redis server to track sent items and prevent duplicated messages.
 
-The following commands will download and install `lococ-job` to a Linux server. Please refer to the [releases page](https://github.com/minhdanh/lococ/releases) for the latest version.
+### 1. Download and Install Binary
+Download the latest `lococ` binary from the [releases page](https://github.com/minhdanh/lococ/releases):
+
 ```bash
-wget https://github.com/minhdanh/lococ/releases/download/v0.1.1/lococ-job-v0.1.1-linux-amd64.tar.gz -O lococ-job.tar.gz
-tar xvf lococ-job.tar.gz
-chmod +x lococ-job
-sudo mv lococ-job /usr/local/bin/
+wget https://github.com/minhdanh/lococ/releases/download/v0.2.0/lococ-v0.2.0-linux-amd64.tar.gz -O lococ.tar.gz
+tar xvf lococ.tar.gz
+chmod +x lococ
+sudo mv lococ /usr/local/bin/
 ```
-Then create a directory for the configuration file:
+
+### 2. Configuration
+Create a directory for the configuration file:
 ```bash
 sudo mkdir /etc/lococ
 ```
-You will need to put a file named `config.yaml` to this directory. Please refer to section [Configurations](#configurations) for the content of this file. Make sure the values of the fields are set correctly.
+Place your `config.yaml` inside `/etc/lococ/`. Refer to [Configurations](#configurations) below for available options.
 
-After that we need to create a cronjob to run `lococ-job` periodically. For example the following cronjob will run `lococ-job` hourly:
-```cron
-0 * * * * /usr/local/bin/lococ-job --config-dir=/etc/lococ
+### 3. Setup systemd Service
+Copy the provided systemd service file:
+```bash
+sudo cp lococ.service /etc/systemd/system/lococ.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now lococ
 ```
 
-That's it. Now wait for messages to be sent to your Telegram channel at the beginning of every hour.
+Check the service status:
+```bash
+sudo systemctl status lococ
+```
+
+View real-time logs using `journalctl`:
+```bash
+journalctl -u lococ -f
+```
+
+### Manual / One-off Execution
+You can run a single check cycle without starting the continuous scheduler using the `--once` flag:
+```bash
+lococ --config-dir=/etc/lococ --once
+```
 
 # Configurations
-You can use environment variables or a config file to deploy the bot.
+You can configure `lococ` using environment variables, command-line flags, or a `config.yaml` file.
+
+### Command-line Flags
+- `--config-dir`: Directory containing `config.yaml` (default: `/etc/lococ`)
+- `--interval`: Interval between checks in daemon mode, e.g. `1h`, `30m` (default: `1h`)
+- `--once`: Run check once and exit immediately
+- `--dry-run`: Fetch items without sending Telegram messages
 
 ### Using environment variables
-- `HACKERNEWS_ENABLED`: Enable HackerNews notifications.
-- `HACKERNEWS_MIN_SCORE`: The minimum score of a news item.
-- `HACKERNEWS_YCOMBINATOR_LINK`: Whether or not to include the link to HackerNews.
-
-- `TELEGRAM_CHANNEL`: The Telegram channel to send notifications to.
-- `TELEGRAM_API_TOKEN`: Telegram API token.
-
-- `BITLY_ENABLED`: Enable this to have shortened links.
-- `BITLY_API_TOKEN`: Bitly API token.
-- `REDISCLOUD_URL`: Redis URL. This is used to make sure we don't receive duplicated notifications.
-- `RSS_CONFIG_BASE64`: A list of RSS channels encoded in base64 format. Just encode a list of the channels (be careful with the indent whitespaces). For example:
+- `INTERVAL`: Check interval (e.g. `1h`, `30m`)
+- `HACKERNEWS_ENABLED`: Enable HackerNews notifications (`true`/`false`)
+- `HACKERNEWS_MIN_SCORE`: The minimum score of a news item
+- `HACKERNEWS_YCOMBINATOR_LINK`: Whether or not to include the link to HackerNews
+- `TELEGRAM_CHANNEL`: The Telegram channel to send notifications to
+- `TELEGRAM_API_TOKEN`: Telegram API token
+- `BITLY_ENABLED`: Enable Bitly link shortening
+- `BITLY_API_TOKEN`: Bitly API token
+- `REDIS_URL`: Redis URL (e.g. `redis://localhost:6379`)
+- `RSS_CONFIG_BASE64`: A list of RSS channels encoded in base64 format. For example:
 ```yaml
 - name: BBC Vietnamese
   url: "https://www.bbc.co.uk/vietnamese/index.xml"
@@ -68,6 +93,9 @@ You can use environment variables or a config file to deploy the bot.
 retry:
   enabled: true
   count: 3
+
+# Interval between periodic checks
+interval: 1h
 
 telegram:
   channel: "@lococ"
@@ -97,17 +125,17 @@ redis:
 ```
 
 # Development
-There're Dockerfile and docker-compose.yml.sample files to help get this app up and running in a local environment. Remember to set the correct values for the environment variables.
+`Dockerfile` and `docker-compose.yml.sample` files are provided for local development:
 
 ```bash
 # Create your docker-compose.yml file
 cp docker-compose.yml.sample docker-compose.yml
 
-# Then update the environment variables in docker-compose.yml
+# Update the environment variables in docker-compose.yml
 
-# Then start the containers
+# Start containers (daemon mode)
 docker compose up
 
-# Then run the job
-docker compose run --rm lococ /bin/lococ-job
+# Or execute a one-off run
+docker compose run --rm lococ /bin/lococ --once
 ```

@@ -1,6 +1,6 @@
 *.swp
-lococ-job
-lococ-web
+/lococ
+cmd/lococ/lococ
 docker-compose.yml
 docker-compose.yaml
 config.yaml

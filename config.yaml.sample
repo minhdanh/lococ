@@ -2,6 +2,8 @@ retry:
   enabled: true
   count: 3
 
+interval: 1h
+
 telegram:
   channel: "@lococ"
   api_token: ""

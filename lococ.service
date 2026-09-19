@@ -1,0 +1,20 @@
+[Unit]
+Description=Lococ Telegram News Bot
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=lococ
+Group=lococ
+ExecStart=/usr/local/bin/lococ --config-dir=/etc/lococ
+Restart=always
+RestartSec=10s
+
+# Sandboxing & security hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

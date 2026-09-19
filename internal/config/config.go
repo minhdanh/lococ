@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/spf13/pflag"
@@ -22,10 +23,11 @@ type Config struct {
 	HackerNewsConfig    *HackerNewsConfig
 	RSSChannels         []RSSChannel
 	RedisClient         *redis.Client
-	Port                int
 	DryRun              bool
 	RetryEnabled        bool
 	RetryCount          int
+	Interval            time.Duration
+	Once                bool
 }
 
 type HackerNewsConfig struct {
@@ -43,10 +45,22 @@ type RSSChannel struct {
 func NewConfig() *Config {
 	configDir := ""
 
-	flag.String("config-dir", "/etc/lococ", "Default config directory")
-	pflag.Bool("dry-run", false, "Do not send real Telegram messages")
+	if flag.Lookup("config-dir") == nil {
+		flag.String("config-dir", "/etc/lococ", "Default config directory")
+	}
+	if pflag.Lookup("dry-run") == nil {
+		pflag.Bool("dry-run", false, "Do not send real Telegram messages")
+	}
+	if pflag.Lookup("interval") == nil {
+		pflag.String("interval", "1h", "Execution interval for periodic checks (e.g. 1h, 30m)")
+	}
+	if pflag.Lookup("once") == nil {
+		pflag.Bool("once", false, "Execute check once and exit immediately")
+	}
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
+	if !pflag.Parsed() {
+		pflag.Parse()
+	}
 	viper.BindPFlags(pflag.CommandLine)
 
 	configDir = viper.GetString("config-dir")
@@ -72,21 +86,22 @@ func NewConfig() *Config {
 	var config Config
 
 	// defaults
-	viper.SetDefault("Port", 3000)
 	viper.SetDefault("RetryEnabled", false)
 	viper.SetDefault("RetryCount", 1)
-
-	config.Port = viper.GetInt("port")
+	viper.SetDefault("Interval", "1h")
 
 	config.TelegramChannel = viper.GetString("telegram.channel")
 	config.TelegramApiToken = viper.GetString("telegram.api_token")
 	config.TelegramPreviewLink = viper.GetBool("telegram.preview_link")
+
 	// retry
 	config.RetryEnabled = viper.GetBool("retry.enabled")
 	config.RetryCount = viper.GetInt("retry.count")
+
 	// bitly
 	config.BitLyEnabled = viper.GetBool("bitly.enabled")
 	config.BitLyApiToken = viper.GetString("bitly.api_token")
+
 	// hackernews
 	hnConfig := HackerNewsConfig{}
 	hnConfig.Enabled = viper.GetBool("hackernews.enabled")
@@ -115,12 +130,20 @@ func NewConfig() *Config {
 	config.RSSChannels = rssChannels
 
 	// redis
-	redisCloudUrl := os.Getenv("REDISCLOUD_URL")
-	redisOptions, err := redis.ParseURL(redisCloudUrl)
-	if err != nil {
-		log.Printf("Warning: %v", err)
-	} else {
-		log.Println("Using Redis config from REDISCLOUD_URL")
+	redisUrl := os.Getenv("REDIS_URL")
+	if redisUrl == "" {
+		redisUrl = os.Getenv("REDISCLOUD_URL")
+	}
+
+	var redisOptions *redis.Options
+	if redisUrl != "" {
+		var err error
+		redisOptions, err = redis.ParseURL(redisUrl)
+		if err != nil {
+			log.Printf("Warning: error parsing Redis URL: %v", err)
+		} else {
+			log.Println("Using Redis config from URL")
+		}
 	}
 
 	if redisOptions == nil {
@@ -133,7 +156,18 @@ func NewConfig() *Config {
 	rc := redis.NewClient(redisOptions)
 	config.RedisClient = rc
 
-	// dry-run
+	// interval
+	intervalStr := viper.GetString("interval")
+	parsedInterval, err := time.ParseDuration(intervalStr)
+	if err != nil {
+		log.Printf("Warning: invalid interval '%v', falling back to 1h: %v", intervalStr, err)
+		parsedInterval = 1 * time.Hour
+	}
+	config.Interval = parsedInterval
+
+	// flags
 	config.DryRun = viper.GetBool("dry-run")
+	config.Once = viper.GetBool("once")
+
 	return &config
 }

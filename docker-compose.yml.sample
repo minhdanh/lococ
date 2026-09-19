@@ -3,9 +3,9 @@ services:
   lococ:
     build: .
     command:
-      - /bin/lococ-web
+      - /bin/lococ
     environment:
-      REDISCLOUD_URL: "redis://redis:6379"
+      REDIS_URL: "redis://redis:6379"
       BITLY_API_TOKEN: 
       BITLY_ENABLED: "true"
       HACKERNEWS_ENABLED: "true"

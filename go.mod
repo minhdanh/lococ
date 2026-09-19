@@ -6,7 +6,6 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-telegram-bot-api/telegram-bot-api v1.0.1-0.20201107014523-54104a08f947
 	github.com/mmcdole/gofeed v1.2.1
-	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	gopkg.in/yaml.v2 v2.4.0

@@ -3,9 +3,12 @@ package main
 import (
 	"crypto/md5"
 	"log"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -40,21 +43,18 @@ func getHNItem(itemsChan chan ItemWrapper, hnClient *hackernews.HNClient, rc *re
 		return
 	}
 	if hnItem.Score >= minScore {
-		// items = append(items, ItemWrapper{Item: hnItem})
 		itemsChan <- ItemWrapper{Item: hnItem}
 	} else {
 		log.Printf("HackerNews item %v doesn't have enough points (%v)", itemId, hnItem.Score)
 	}
 }
 
-func main() {
-	config := config.NewConfig()
-
+func runCheck(cfg *config.Config) {
 	var items []ItemWrapper
 
-	rc := config.RedisClient
+	rc := cfg.RedisClient
 
-	if config.HackerNewsConfig.Enabled {
+	if cfg.HackerNewsConfig.Enabled {
 		log.Println("Getting top stories from HackerNews")
 		hnClient := hackernews.NewHNClient()
 		hnItemIDs := hnClient.GetItemIDs()
@@ -64,7 +64,7 @@ func main() {
 
 		for _, itemId := range hnItemIDs {
 			wg.Add(1)
-			go getHNItem(itemsChan, hnClient, rc, config.HackerNewsConfig.MinScore, itemId, wg)
+			go getHNItem(itemsChan, hnClient, rc, cfg.HackerNewsConfig.MinScore, itemId, wg)
 		}
 
 		go func() {
@@ -77,7 +77,7 @@ func main() {
 		}
 	}
 
-	for _, rssChannel := range config.RSSChannels {
+	for _, rssChannel := range cfg.RSSChannels {
 		log.Printf("Getting RSS content for %v", rssChannel.Name)
 
 		fp := gofeed.NewParser()
@@ -105,7 +105,7 @@ func main() {
 
 	log.Printf("Processing %v items", len(items))
 
-	t := telegram.NewClient(config.TelegramApiToken, config.TelegramChannel, config.TelegramPreviewLink, config.HackerNewsConfig.YcombinatorLink)
+	t := telegram.NewClient(cfg.TelegramApiToken, cfg.TelegramChannel, cfg.TelegramPreviewLink, cfg.HackerNewsConfig.YcombinatorLink)
 	for _, item := range items {
 		var url, redisKey string
 		switch value := item.Item.(type) {
@@ -118,12 +118,12 @@ func main() {
 			url = strings.TrimSpace(value.Link)
 			redisKey = item.RssLinkCheckSum
 		}
-		if config.BitLyEnabled {
-			bitly := bitly.NewClient(config.BitLyApiToken)
+		if cfg.BitLyEnabled {
+			bitly := bitly.NewClient(cfg.BitLyApiToken)
 			url = bitly.ShortenUrl(url)
 		}
-		if config.DryRun == false {
-			for i := 0; i < config.RetryCount+1; i++ {
+		if !cfg.DryRun {
+			for i := 0; i < cfg.RetryCount+1; i++ {
 				if i > 0 {
 					log.Println("Retrying message...")
 				}
@@ -142,12 +142,45 @@ func main() {
 					break
 				}
 
-				if config.RetryEnabled == false {
+				if !cfg.RetryEnabled {
 					break
 				}
 			}
 		} else {
 			log.Println("dry-run mode is enabled. Not sending messages.")
+		}
+	}
+}
+
+func main() {
+	cfg := config.NewConfig()
+
+	if cfg.Once {
+		log.Println("Running lococ once...")
+		runCheck(cfg)
+		log.Println("Check completed.")
+		return
+	}
+
+	log.Printf("Starting lococ service with interval %v...", cfg.Interval)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	log.Println("Executing initial check on startup...")
+	runCheck(cfg)
+
+	ticker := time.NewTicker(cfg.Interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			log.Println("Executing scheduled check...")
+			runCheck(cfg)
+		case sig := <-sigChan:
+			log.Printf("Received signal %v. Shutting down gracefully...", sig)
+			return
 		}
 	}
 }
