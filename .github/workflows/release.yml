@@ -8,13 +8,15 @@ jobs:
   releases-matrix:
     name: Release Go Binary
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         goos: [linux]
         goarch: [arm, arm64, amd64]
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Release
       uses: wangyoucao577/go-release-action@v1
       with:
