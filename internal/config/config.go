@@ -43,7 +43,7 @@ type RSSChannel struct {
 func NewConfig() *Config {
 	configDir := ""
 
-	flag.String("config-dir", "/etc/thangmo", "Default config directory")
+	flag.String("config-dir", "/etc/lococ", "Default config directory")
 	pflag.Bool("dry-run", false, "Do not send real Telegram messages")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()

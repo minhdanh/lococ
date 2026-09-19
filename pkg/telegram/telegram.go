@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/minhdanh/thangmo/pkg/hackernews"
+	"github.com/minhdanh/lococ/pkg/hackernews"
 	"github.com/mmcdole/gofeed"
 )
 

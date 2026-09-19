@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/minhdanh/thangmo/internal/config"
+	"github.com/minhdanh/lococ/internal/config"
 	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.WithField("cmd", "thangmo-web")
+var log = logrus.WithField("cmd", "lococ-web")
 
 func main() {
 	config := config.NewConfig()

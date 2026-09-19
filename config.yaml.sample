@@ -3,7 +3,7 @@ retry:
   count: 3
 
 telegram:
-  channel: "@thangmo"
+  channel: "@lococ"
   api_token: ""
 
 bitly:

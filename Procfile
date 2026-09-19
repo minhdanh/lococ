@@ -1,1 +1,1 @@
-web: thangmo-web
+web: lococ-web

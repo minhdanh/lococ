@@ -1,9 +1,9 @@
 version: "3"
 services:
-  thangmo:
+  lococ:
     build: .
     command:
-      - /bin/thangmo-web
+      - /bin/lococ-web
     environment:
       REDISCLOUD_URL: "redis://redis:6379"
       BITLY_API_TOKEN: 

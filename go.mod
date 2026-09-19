@@ -1,4 +1,4 @@
-module github.com/minhdanh/thangmo
+module github.com/minhdanh/lococ
 
 go 1.20
 

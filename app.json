@@ -1,7 +1,7 @@
 {
-  "name": "thangmo",
+  "name": "lococ",
   "description": "A small app to send hot stories from HackerNews or links from RSS channels to Telegram channels",
-  "repository": "https://github.com/minhdanh/thangmo",
+  "repository": "https://github.com/minhdanh/lococ",
   "keywords": ["go", "golang", "bot", "telegram", "hackernews", "rss", "feed"],
   "env": {
     "BITLY_API_TOKEN": {

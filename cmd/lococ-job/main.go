@@ -10,10 +10,10 @@ import (
 
 	"github.com/go-redis/redis"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/minhdanh/thangmo/internal/config"
-	"github.com/minhdanh/thangmo/pkg/bitly"
-	"github.com/minhdanh/thangmo/pkg/hackernews"
-	"github.com/minhdanh/thangmo/pkg/telegram"
+	"github.com/minhdanh/lococ/internal/config"
+	"github.com/minhdanh/lococ/pkg/bitly"
+	"github.com/minhdanh/lococ/pkg/hackernews"
+	"github.com/minhdanh/lococ/pkg/telegram"
 	"github.com/mmcdole/gofeed"
 )
 
