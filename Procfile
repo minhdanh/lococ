@@ -1,1 +1,0 @@
-web: lococ-web

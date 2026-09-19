@@ -5,3 +5,5 @@ docker-compose.yml
 docker-compose.yaml
 config.yaml
 config.yml
+.DS_Store
+vendor/

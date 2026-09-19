@@ -53,7 +53,7 @@ You can use environment variables or a config file to deploy the bot.
 - `BITLY_ENABLED`: Enable this to have shortened links.
 - `BITLY_API_TOKEN`: Bitly API token.
 - `REDISCLOUD_URL`: Redis URL. This is used to make sure we don't receive duplicated notifications.
-- `RSS_CONFIG_BASE64`: A list of RSS channels encoded in base64 format. Useful if you want to deploy this on Heroku. Just encode a list of the channels (be careful with the indent whitespaces). For example:
+- `RSS_CONFIG_BASE64`: A list of RSS channels encoded in base64 format. Just encode a list of the channels (be careful with the indent whitespaces). For example:
 ```yaml
 - name: BBC Vietnamese
   url: "https://www.bbc.co.uk/vietnamese/index.xml"
@@ -94,16 +94,6 @@ redis:
   port: 6379
   username: ""
   password: ""
-```
-
-# Heroku deployment
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-
-You can click the `Deploy to Heroku` button above to deploy this app to Heroku.
-Please note that you will need to configure Heroku Scheduler to run this command periodically:
-
-```bash
-lococ-job --config-dir=/app
 ```
 
 # Development
